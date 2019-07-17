@@ -1,0 +1,7 @@
+config.py.example删去.example
+
+图片路径的参数./image/test.jpg改为./images/test.jpg
+
+参数添加保存路径：--save_to ./images/result.jpg
+
+nms的作用是非极大抑制
