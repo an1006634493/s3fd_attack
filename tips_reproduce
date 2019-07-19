@@ -5,3 +5,5 @@ config.py.example删去.example
 参数添加保存路径：--save_to ./images/result.jpg
 
 nms的作用是非极大抑制
+
+改动perturb函数的时候注意，对model的输出做处理，筛选出类别“1”评分高于0.3的框。
