@@ -11,6 +11,7 @@ from config import Config
 from model import Net
 from utils import change_coordinate, change_coordinate_inv, seek_model, save_bounding_boxes_image, nms
 from evaluation_metrics import softmax
+from advertorch.attacks import LinfPGDAttack, L2MomentumIterativeAttack, LinfMomentumIterativeAttack, LBFGSAttack, SinglePixelAttack, LocalSearchAttack
 
 device = torch.device(Config.DEVICE)
 
@@ -196,9 +197,17 @@ def main(args):
         save_bounding_boxes_image(args.image, bboxes, args.save_to)
         
     adversary = L2MomentumIterativeAttack(
-        Detector(args.model).model, loss_fn=atttack_arc_distance(classnum=2), eps=3,
+        Detector(args.model).model, loss_fn=loss_attack(), eps=3,
         nb_iter=40, eps_iter=0.1, decay_factor=1., clip_min=-1.0, clip_max=1.0,
-        targeted=True)
+        targeted=False)
+    
+    ground_truth = [x[:4] for x in bboxes]
+    image = cv2.imread(args.image)
+    image = image - np.array([104, 117, 123], dtype=np.uint8)
+
+    image = torch.tensor(image).permute(2, 0, 1).float() \
+        .to(device).unsqueeze(0)
+    adv_img = adversary.perturb(image, ground_truth)
 
 
 if __name__ == '__main__':
