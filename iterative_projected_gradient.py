@@ -317,7 +317,7 @@ class MomentumIterativeAttack(Attack, LabelMixin):
         x, y_groundtruth = self._verify_and_process_inputs(x, y_groundtruth)
         #print(x)
 
-        delta = torch.zeros_like(x)
+        delta = torch.rand_like(x, requires_grad=True)
         g = torch.zeros_like(x)
 
         delta = nn.Parameter(delta)
@@ -330,13 +330,13 @@ class MomentumIterativeAttack(Attack, LabelMixin):
                 delta.grad.detach_()
                 delta.grad.zero_()
 
-            print(delta.grad)
+            #print(delta.grad)
             imgadv = x + delta
             #print(imgadv)
             predictions_1 = self.predict(imgadv)
             #print(predictions_1)
             
-            loss = self.loss_fn(predictions_1, y_groundtruth)
+            loss = self.loss_fn.forward(predictions_1, y_groundtruth)
             if self.targeted:
                 loss = -loss
             loss.backward()
