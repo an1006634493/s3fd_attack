@@ -53,17 +53,6 @@ class Detector(object):
         scores, inds = torch.sort(scores, descending=True)
         print(scores.size())
         klass, predictions, anchors = klass[inds], predictions[inds], anchors[inds]
-        
-        
-        #with torch.no_grad():
-        #    np.save("./scores.npy", scores)
-        #    np.save("./klass.npy", klass)
-        #    np.save("./predictions.npy", predictions)
-        #    np.save("./anchors.npy", anchors)
-
-        # inds = scores > self.threshold
-        # scores, klass, predictions, anchors = \
-        #     scores[inds], klass[inds], predictions[inds], anchors[inds]
 
         scores, klass, predictions, anchors = \
             scores[:200], klass[:200], predictions[:200], anchors[:200]
@@ -173,7 +162,7 @@ class Detector(object):
 
 class loss_attack(nn.Module):
 
-    def __init__(self):
+    def __init__(self,):
         super().__init__()
     
     def forward(self, predictions_1, y):
@@ -204,35 +193,28 @@ class loss_attack(nn.Module):
         cls_preds = torch.cat(predictions_1[1::2])
         
         predictions = torch.cat((reg_preds, cls_preds), dim=1)
-        scores, klass = torch.max(softmax(predictions[:, 4:]), dim=1)
-        inds = klass != 0
+        #print("softmax:", softmax(predictions[:, 4:]))
+        scores_softmax = softmax(predictions[:, 4:])
+        scores = scores_softmax[:, -1]
+        #print("scores:", scores)
+        #scores, klass = torch.max(softmax(predictions[:, 4:]), dim=1)
+        #inds = klass != 0
         #print(scores.size())
 
-        scores, klass, predictions, anchors = \
-            scores[inds], klass[inds], predictions[inds], anchors[inds]
+        #scores, klass, predictions, anchors = \
+        #    scores[inds], klass[inds], predictions[inds], anchors[inds]
 
         if len(scores) == 0:
             print("scores=0")
             #rval = x + delta.data
             #return rval
 
-        scores, inds = torch.sort(scores, descending=True)
+        #scores, inds = torch.sort(scores, descending=True)
         #print(scores.size())
-        klass, predictions, anchors = klass[inds], predictions[inds], anchors[inds]
-        
-        
-        #with torch.no_grad():
-        #    np.save("./scores.npy", scores)
-        #    np.save("./klass.npy", klass)
-        #    np.save("./predictions.npy", predictions)
-        #    np.save("./anchors.npy", anchors)
+        #klass, predictions, anchors = klass[inds], predictions[inds], anchors[inds]
 
-        # inds = scores > self.threshold
-        # scores, klass, predictions, anchors = \
-        #     scores[inds], klass[inds], predictions[inds], anchors[inds]
-
-        scores, klass, predictions, anchors = \
-            scores[:200], klass[:200], predictions[:200], anchors[:200]
+        #scores, klass, predictions, anchors = \
+        #    scores[:200], klass[:200], predictions[:200], anchors[:200]
 
         if len(predictions) == 0:
             print("predictions=0")
@@ -245,19 +227,19 @@ class loss_attack(nn.Module):
         w = (torch.exp(predictions[:, 2]) * anchors[:, 2])
         h = (torch.exp(predictions[:, 3]) * anchors[:, 3])
 
-        bounding_boxes_data = torch.stack((x_coordinate, y_coordinate, w, h), dim=1).cpu().data.numpy()
-        bounding_boxes_data = change_coordinate_inv(bounding_boxes_data)
+        #bounding_boxes_data = torch.stack((x_coordinate, y_coordinate, w, h), dim=1).cpu().data.numpy()
+        #bounding_boxes_data = change_coordinate_inv(bounding_boxes_data)
 
-        scores_data = scores.cpu().data.numpy()
-        klass_data = klass.cpu().data.numpy()
-        bboxes_scores = np.hstack(
-            (bounding_boxes_data, np.array(list(zip(*(scores_data, klass_data)))))
-        )
+        #scores_data = scores.cpu().data.numpy()
+        #klass_data = klass.cpu().data.numpy()
+        #bboxes_scores = np.hstack(
+        #    (bounding_boxes_data, np.array(list(zip(*(scores_data, klass_data)))))
+        #)
         #print("bounding_boxes:", bounding_boxes.shape(), bounding_boxes)
         #print("bboxes_scores:", bboxes_scores(), bboxes_scores)
 
         # nms
-        keep = nms(bboxes_scores)
+        #keep = nms(bboxes_scores)
         
         #np.save("./bounding_boxes.npy", bounding_boxes)
         #np.save("./bboxes_scores.npy", bboxes_scores)
@@ -268,6 +250,7 @@ class loss_attack(nn.Module):
         outputs = bounding_boxes
         
         threshold_p = 0.3
+        threshold_rou = 0.7
     
         Td_index = []
         #Td_scores = []
@@ -276,6 +259,8 @@ class loss_attack(nn.Module):
         all_scores = scores
         
         for index_outputs, box_outputs in enumerate(outputs):
+            if(all_scores[index_outputs] < threshold_rou):
+                continue
             x_outputs, y_outputs, w_outputs, h_outputs = box_outputs
             for index_y, box_y in enumerate(y):
                 x_y, y_y, w_y, h_y = box_y
@@ -284,7 +269,7 @@ class loss_attack(nn.Module):
                 IoU = delta_w * delta_h / (w_outputs * h_outputs + w_y * h_y - delta_w * delta_h)
                 if IoU > threshold_p:
                     #Td_scores.append(score_outputs)
-                    Td_log.append(torch.log(1 - all_scores[index_outputs]))
+                    Td_log.append(torch.log(1. - all_scores[index_outputs]))
                     Td_index.append(index_outputs)
                     break
                 else:
@@ -295,7 +280,12 @@ class loss_attack(nn.Module):
         Td_sum = sum(Td_log)
         Fd_sum = sum(Fd_log)
         
+        print(Td_sum + Fd_sum)
+        
         return Td_sum + Fd_sum
+        
+        def backward(grad_output):
+            return grad_output
 
 def main(args):
     print('predicted bounding boxes of faces:')
@@ -318,7 +308,7 @@ def main(args):
     adversary = L2MomentumIterativeAttack(
         Detector(args.model).model, loss_fn=loss_attack(), eps=3,
         nb_iter=40, eps_iter=0.1, decay_factor=1., clip_min=0., clip_max=255.,
-        targeted=False)
+        targeted=True)
     image = cv2.imread(args.image)
     image = image - np.array([104, 117, 123], dtype=np.uint8)
     image = torch.tensor(image).permute(2, 0, 1).float() \
