@@ -5,6 +5,7 @@ import sys
 import cv2
 import numpy as np
 import torch
+import torch.nn as nn
 
 from anchor import generate_anchors, anchors_of_feature_map
 from config import Config
@@ -13,55 +14,10 @@ from utils import change_coordinate, change_coordinate_inv, seek_model, save_bou
 from evaluation_metrics import softmax
 from advertorch.attacks import LinfPGDAttack, L2MomentumIterativeAttack, LinfMomentumIterativeAttack, LBFGSAttack, SinglePixelAttack, LocalSearchAttack
 
+import pdb
+
 device = torch.device(Config.DEVICE)
 
-
-class loss_attack():
-    
-    def forward(self, outputs, scores, y):
-        
-        """ Calculate the identified loss
-        Args:
-            outputs: include all the proposed bounding boxes whose scores are higher than threshold. It is not the original output 
-                    of model, but need to pick up some of them.
-            y: the ground truth, could generate from the original result in the main function.
-        Returns:
-            Calculate the IoU of all the boxes in outputs, and find out Td in which the IoU is higher than threshold and the Fd.
-            Then calculate the final loss with Td and Fd.
-        """
-        
-        threshold_p = 0.3
-        
-        Td_index = []
-        Td_scores = []
-        Td_log = []
-        all_index = list(range(len(outputs)))
-        all_scores = [x[-1] for x in outputs]
-        
-        for index_outputs, box_outputs in enumerate(outputs):
-            x_outputs, y_outputs, w_outputs, h_outputs, score_outputs = box_outputs
-            for index_y, box_y in enumerate(y):
-                x_y, y_y, w_y, h_y = box_y
-                delta_w = min(x_outputs + w_outputs, x_y + w_y) - max(x_outputs, x_y)
-                delta_h = min(y_outputs + h_outputs, y_y + h_y) - max(y_outputs, y_y)
-                IoU = delta_w * delta_h / (w_outputs * h_outputs + w_y * h_y - delta_w * delta_h)
-                if IoU > threshold_p:
-                    Td_scores.append(score_outputs)
-                    Td_log.append(torch.log(1 - score_outputs))
-                    Td_index.append(index_outputs)
-                    break
-                else:
-                    continue
-        Fd =  [x for x in all_index if x not in Td_index]
-        Fd_scores = [all_scores[i] for i in Fd]
-        Fd_log = [torch.log(x) for x in Fd_scores]
-        Td_sum = sum(Td_log)
-        Fd_sum = sum(Fd_log)
-        
-        return Td_sum + Fd_sum
-    
-        
-    
 
 class Detector(object):
 
@@ -86,6 +42,7 @@ class Detector(object):
 
         scores, klass = torch.max(softmax(predictions[:, 4:]), dim=1)
         inds = klass != 0
+        print(scores.size())
 
         scores, klass, predictions, anchors = \
             scores[inds], klass[inds], predictions[inds], anchors[inds]
@@ -94,11 +51,8 @@ class Detector(object):
             return None
 
         scores, inds = torch.sort(scores, descending=True)
+        print(scores.size())
         klass, predictions, anchors = klass[inds], predictions[inds], anchors[inds]
-
-        # inds = scores > self.threshold
-        # scores, klass, predictions, anchors = \
-        #     scores[inds], klass[inds], predictions[inds], anchors[inds]
 
         scores, klass, predictions, anchors = \
             scores[:200], klass[:200], predictions[:200], anchors[:200]
@@ -112,18 +66,26 @@ class Detector(object):
         w = (torch.exp(predictions[:, 2]) * anchors[:, 2])
         h = (torch.exp(predictions[:, 3]) * anchors[:, 3])
 
-        bounding_boxes = torch.stack((x, y, w, h), dim=1).cpu().data.numpy()
-        bounding_boxes = change_coordinate_inv(bounding_boxes)
+        bounding_boxes_data = torch.stack((x, y, w, h), dim=1).cpu().data.numpy()
+        bounding_boxes_data = change_coordinate_inv(bounding_boxes_data)
 
-        scores = scores.cpu().data.numpy()
-        klass = klass.cpu().data.numpy()
+        scores_data = scores.cpu().data.numpy()
+        klass_data = klass.cpu().data.numpy()
         bboxes_scores = np.hstack(
-            (bounding_boxes, np.array(list(zip(*(scores, klass)))))
+            (bounding_boxes_data, np.array(list(zip(*(scores_data, klass_data)))))
         )
+        #print("bounding_boxes:", bounding_boxes.shape(), bounding_boxes)
+        #print("bboxes_scores:", bboxes_scores(), bboxes_scores)
 
         # nms
         keep = nms(bboxes_scores)
-        return bboxes_scores[keep]
+        
+        #np.save("./bounding_boxes.npy", bounding_boxes)
+        #np.save("./bboxes_scores.npy", bboxes_scores)
+        #np.save("./keep.npy", keep)
+        #np.save("./bboxes_scores_keep.npy", bboxes_scores[keep])
+        bounding_boxes = torch.stack((x, y, w, h), dim=1)
+        return bounding_boxes[keep], bounding_boxes, scores
 
     def forward(self, batched_data):
         """predict with pytorch dataset output
@@ -165,12 +127,15 @@ class Detector(object):
 
     def infer(self, image):
         image = cv2.imread(image)
+        #print(image)
+        #print(np.array([104, 117, 123], dtype=np.uint8))
         image = image - np.array([104, 117, 123], dtype=np.uint8)
 
         _input = torch.tensor(image).permute(2, 0, 1).float() \
             .to(device).unsqueeze(0)
 
         predictions = self.model(_input)
+        #print(predictions.size())
         # flatten predictions
         reg_preds = []
         cls_preds = []
@@ -184,20 +149,182 @@ class Detector(object):
                 )))
 
             predictions[index] = prediction.squeeze().view(prediction.size()[1], -1).permute(1, 0)
-
+        
         anchors = torch.tensor(np.vstack(anchors))
         reg_preds = torch.cat(predictions[::2])
         cls_preds = torch.cat(predictions[1::2])
+        #print(reg_preds[0:10])
+        #print(cls_preds[0:10])
+        #print(torch.max(softmax(cls_preds[0:10, :]), dim=1))
 
         return self.convert_predictions(torch.cat((reg_preds, cls_preds), dim=1), None, anchors)
 
 
+class loss_attack(nn.Module):
+
+    def __init__(self,):
+        super().__init__()
+    
+    def forward(self, predictions_1, y):
+        
+        """ Calculate the identified loss
+        Args:
+            outputs: include all the proposed bounding boxes whose scores are higher than threshold. It is not the original output 
+                    of model, but need to pick up some of them.
+            y: the ground truth, could generate from the original result in the main function.
+        Returns:
+            Calculate the IoU of all the boxes in outputs, and find out Td in which the IoU is higher than threshold and the Fd.
+            Then calculate the final loss with Td and Fd.
+        """
+        
+        reg_preds = []
+        cls_preds = []
+        anchors = []
+        for index, prediction in enumerate(predictions_1):
+            if (index % 2) == 0:
+                anchors.append( np.array( anchors_of_feature_map (
+                    Config.ANCHOR_STRIDE[index//2],
+                    Config.ANCHOR_SIZE[index//2],
+                    prediction.size()[2:]
+                )))
+            predictions_1[index] = prediction.squeeze().view(prediction.size()[1], -1).permute(1, 0)
+        anchors = torch.tensor(np.vstack(anchors))
+        reg_preds = torch.cat(predictions_1[::2])
+        cls_preds = torch.cat(predictions_1[1::2])
+        
+        predictions = torch.cat((reg_preds, cls_preds), dim=1)
+        #print("softmax:", softmax(predictions[:, 4:]))
+        scores_softmax = softmax(predictions[:, 4:])
+        scores = scores_softmax[:, -1]
+        #print("scores:", scores)
+        #scores, klass = torch.max(softmax(predictions[:, 4:]), dim=1)
+        #inds = klass != 0
+        #print(scores.size())
+
+        #scores, klass, predictions, anchors = \
+        #    scores[inds], klass[inds], predictions[inds], anchors[inds]
+
+        if len(scores) == 0:
+            print("scores=0")
+            #rval = x + delta.data
+            #return rval
+
+        #scores, inds = torch.sort(scores, descending=True)
+        #print(scores.size())
+        #klass, predictions, anchors = klass[inds], predictions[inds], anchors[inds]
+
+        #scores, klass, predictions, anchors = \
+        #    scores[:200], klass[:200], predictions[:200], anchors[:200]
+
+        if len(predictions) == 0:
+            print("predictions=0")
+            #rval = x + delta.data
+            #return rval
+        anchors = anchors.to(device).float()
+
+        x_coordinate = (predictions[:, 0] * anchors[:, 2] + anchors[:, 0])
+        y_coordinate = (predictions[:, 1] * anchors[:, 3] + anchors[:, 1])
+        w = (torch.exp(predictions[:, 2]) * anchors[:, 2])
+        h = (torch.exp(predictions[:, 3]) * anchors[:, 3])
+
+        #bounding_boxes_data = torch.stack((x_coordinate, y_coordinate, w, h), dim=1).cpu().data.numpy()
+        #bounding_boxes_data = change_coordinate_inv(bounding_boxes_data)
+
+        #scores_data = scores.cpu().data.numpy()
+        #klass_data = klass.cpu().data.numpy()
+        #bboxes_scores = np.hstack(
+        #    (bounding_boxes_data, np.array(list(zip(*(scores_data, klass_data)))))
+        #)
+        #print("bounding_boxes:", bounding_boxes.shape(), bounding_boxes)
+        #print("bboxes_scores:", bboxes_scores(), bboxes_scores)
+
+        # nms
+        #keep = nms(bboxes_scores)
+        
+        #np.save("./bounding_boxes.npy", bounding_boxes)
+        #np.save("./bboxes_scores.npy", bboxes_scores)
+        #np.save("./keep.npy", keep)
+        #np.save("./bboxes_scores_keep.npy", bboxes_scores[keep])
+        bounding_boxes = torch.stack((x_coordinate, y_coordinate, w, h), dim=1)
+        
+        outputs = bounding_boxes
+        
+        theta_d = 0.5
+        threshold_p = 0.3
+        threshold_rou = 0.1
+    
+        Td_index = []
+        #Td_scores = []
+        Td_log = []
+        all_index = list(range(len(outputs)))
+        all_scores = scores
+        #print("all_scores:", len(all_scores))
+        
+        for index_outputs, box_outputs in enumerate(outputs):
+            if(all_scores[index_outputs] < theta_d):
+                continue
+            x_outputs, y_outputs, w_outputs, h_outputs = box_outputs
+            for index_y, box_y in enumerate(y):
+                x_y, y_y, w_y, h_y = box_y
+                delta_w = min(x_outputs + w_outputs, x_y + w_y) - max(x_outputs, x_y)
+                delta_h = min(y_outputs + h_outputs, y_y + h_y) - max(y_outputs, y_y)
+                IoU = delta_w * delta_h / (w_outputs * h_outputs + w_y * h_y - delta_w * delta_h)
+                if IoU > threshold_p:
+                    #Td_scores.append(score_outputs)
+                    Td_log.append(torch.log(1. - all_scores[index_outputs]))
+                    Td_index.append(index_outputs)
+                    break
+                else:
+                    continue
+        
+        Fd_index_all =  [x for x in all_index if x not in Td_index]
+        Fd_scores_all = [all_scores[i] for i in Fd_index_all]
+        Fd_scores = [x for x in Fd_scores_all if x > threshold_rou]
+        Fd_log = [torch.log(x) for x in Fd_scores]
+        Td_sum = sum(Td_log)
+        Fd_sum = sum(Fd_log)
+        #print("Fd_index_all:", len(Fd_index_all))
+        print("Td_log:", len(Td_log), "Fd_log:", len(Fd_log))
+        print(Td_sum + Fd_sum)
+        
+        return Td_sum + Fd_sum
+        
+        def backward(grad_output):
+            return grad_output
+
 def main(args):
     print('predicted bounding boxes of faces:')
-    bboxes = Detector(args.model).infer(args.image)
-    print(bboxes)
-    if args.save_to:
-        save_bounding_boxes_image(args.image, bboxes, args.save_to)
+    print(args.image)
+    #pdb.set_trace()
+    bboxes, bboxes_many, bboxes_many_scores = Detector(args.model).infer(args.image)
+    #print(bboxes)
+    #if args.save_to:
+    #    save_bounding_boxes_image(args.image, bboxes, args.save_to)
+    ground_truth = bboxes
+    attacks_try = bboxes_many
+    #print("ground_truth:",ground_truth)
+    #print("attacks_try:", attacks_try)
+    
+    #loss_try = loss_attack(attacks_try, bboxes_many_scores, ground_truth)
+    
+    #print(loss_try)
+    
+    
+    adversary = L2MomentumIterativeAttack(
+        Detector(args.model).model, loss_fn=loss_attack(), eps=1000,
+        nb_iter=100, eps_iter=100, decay_factor=1., clip_min=0., clip_max=255.,
+        targeted=True)
+    image = cv2.imread(args.image)
+    image = image - np.array([104, 117, 123], dtype=np.uint8)
+    image = torch.tensor(image).permute(2, 0, 1).float() \
+        .to(device).unsqueeze(0)
+    np.save("/hd1/anshengnan/sfd.pytorch-master/images/img.npy", image)
+    adv_img = adversary.perturb(image, ground_truth)
+    print(adv_img)
+    np.save("/hd1/anshengnan/sfd.pytorch-master/images/adv_img.npy", adv_img)
+    #cv2.imshow('adv', adv_img)
+    
+
 
 
 if __name__ == '__main__':
