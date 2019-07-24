@@ -1,0 +1,44 @@
+任务描述：
+
+使用AdverTorch工具库，对人脸识别系统S3FD进行攻击。S3FD是基于快速检测框架SSD的人脸识别系统，攻击使用的方法是基于迭代的L2MomentumIterativeAttack的变形，参见论文《Hiding Faces in Plain Sight》。
+使用的深度学习框架为PyTorch。
+AdverTorch使用方法与函数参数参见：https://advertorch.readthedocs.io/en/latest/_tutorials/tutorial_attack_defense_bpda_mnist.html
+
+
+
+服务器：
+
+172.18.32.73，用户名anshengnan，密码12345678a
+文件目录：/hd1/anshengnan/sfd.pytorch-master/
+环境激活：conda activate py36
+
+
+
+目录文件：
+
+./advertorch：
+AdverTorch的修改版。（py36环境下安装有原版AdverTorch）具体修改内容：./advertorch/attacks/iterative_projected_gradient.py中MomentumIterativeAttack类下的perturb函数，line 305-374
+
+./detector.py:
+S3FD的测试程序，命令为：python3 detector.py --image ./images/test.jpg --model ./epoch_204.pth.tar --save_to ./images/result.jpg
+参数--image为测试图片路径，--model为预训练模型路径，--save_to为保存结果图片路径。
+
+./detector_attack.py:
+对detector.py修改后的攻击程序。主要修改部分有二：
+
+	1、Detector类下的convert_predictions函数：修改了输出，使识别结果的bounding_box与scores、kclass分离，便于输入攻击模型。line 40-88
+
+	2、定义了攻击使用的损失函数loss_attack类：
+		forward函数：
+		输入：Detector(args.model).model对图像的处理结果和ground_truth的bounding_box。
+		输出：《Hiding Faces》论文中的损失函数的计算值。
+		描述：forward函数中前半部分是对model输出的处理，获取需要的outputs（即所有proposal bounding_box）bounding_box与scores（line 180-250）。后半部分是计算loss值（line 252-290）。
+		参数：论文中设定了计算loss时的三个参数：
+			theta_d：判断每个proposal是否为人脸的score阈值
+			threshold_p：是否为正例的阈值（即判断为正例的IoU阈值）
+			threshold_rou：负例的选取阈值（即排除掉score过低的负例，减少计算量）
+
+
+存在问题：已可进行扰动，使loss上升，但上升十分有限，不足以迷惑检测器。
+
+可能的解决方案：增大攻击模型的参数eps和eps_iter（但有可能图片失真），或改变损失函数中的参数（如调高threshold_p）。
