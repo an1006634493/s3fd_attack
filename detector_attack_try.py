@@ -311,8 +311,8 @@ def main(args):
     
     
     adversary = L2MomentumIterativeAttack(
-        Detector(args.model).model, loss_fn=loss_attack(), eps=1000,
-        nb_iter=100, eps_iter=100, decay_factor=1., clip_min=0., clip_max=255.,
+        Detector(args.model).model, loss_fn=loss_attack(), eps=500,
+        nb_iter=10, eps_iter=100, decay_factor=1., clip_min=-103., clip_max=132.,
         targeted=True)
     image = cv2.imread(args.image)
     image = image - np.array([104, 117, 123], dtype=np.uint8)
