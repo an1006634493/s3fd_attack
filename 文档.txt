@@ -1,44 +1,51 @@
-ÈÎÎñÃèÊö£º
+ä»»åŠ¡æè¿°ï¼š
 
-Ê¹ÓÃAdverTorch¹¤¾ß¿â£¬¶ÔÈËÁ³Ê¶±ğÏµÍ³S3FD½øĞĞ¹¥»÷¡£S3FDÊÇ»ùÓÚ¿ìËÙ¼ì²â¿ò¼ÜSSDµÄÈËÁ³Ê¶±ğÏµÍ³£¬¹¥»÷Ê¹ÓÃµÄ·½·¨ÊÇ»ùÓÚµü´úµÄL2MomentumIterativeAttackµÄ±äĞÎ£¬²Î¼ûÂÛÎÄ¡¶Hiding Faces in Plain Sight¡·¡£
-Ê¹ÓÃµÄÉî¶ÈÑ§Ï°¿ò¼ÜÎªPyTorch¡£
-AdverTorchÊ¹ÓÃ·½·¨Óëº¯Êı²ÎÊı²Î¼û£ºhttps://advertorch.readthedocs.io/en/latest/_tutorials/tutorial_attack_defense_bpda_mnist.html
-
-
-
-·şÎñÆ÷£º
-
-172.18.32.73£¬ÓÃ»§Ãûanshengnan£¬ÃÜÂë12345678a
-ÎÄ¼şÄ¿Â¼£º/hd1/anshengnan/sfd.pytorch-master/
-»·¾³¼¤»î£ºconda activate py36
+ä½¿ç”¨AdverTorchå·¥å…·åº“ï¼Œå¯¹äººè„¸è¯†åˆ«ç³»ç»ŸS3FDè¿›è¡Œæ”»å‡»ã€‚S3FDæ˜¯åŸºäºå¿«é€Ÿæ£€æµ‹æ¡†æ¶SSDçš„äººè„¸è¯†åˆ«ç³»ç»Ÿï¼Œæ”»å‡»ä½¿ç”¨çš„æ–¹æ³•æ˜¯åŸºäºè¿­ä»£çš„L2MomentumIterativeAttackçš„å˜å½¢ï¼Œå‚è§è®ºæ–‡ã€ŠHiding Faces in Plain Sightã€‹ã€‚
+ä½¿ç”¨çš„æ·±åº¦å­¦ä¹ æ¡†æ¶ä¸ºPyTorchã€‚
+AdverTorchä½¿ç”¨æ–¹æ³•ä¸å‡½æ•°å‚æ•°å‚è§ï¼šhttps://advertorch.readthedocs.io/en/latest/_tutorials/tutorial_attack_defense_bpda_mnist.html
 
 
 
-Ä¿Â¼ÎÄ¼ş£º
+æœåŠ¡å™¨ï¼š
 
-./advertorch£º
-AdverTorchµÄĞŞ¸Ä°æ¡££¨py36»·¾³ÏÂ°²×°ÓĞÔ­°æAdverTorch£©¾ßÌåĞŞ¸ÄÄÚÈİ£º./advertorch/attacks/iterative_projected_gradient.pyÖĞMomentumIterativeAttackÀàÏÂµÄperturbº¯Êı£¬line 305-374
+172.18.32.73ï¼Œç”¨æˆ·åanshengnanï¼Œå¯†ç 12345678a
+æ–‡ä»¶ç›®å½•ï¼š/hd1/anshengnan/sfd.pytorch-master/
+ç¯å¢ƒæ¿€æ´»ï¼šconda activate py36
+
+
+
+ç›®å½•æ–‡ä»¶ï¼š
+
+./advertorchï¼š
+AdverTorchçš„ä¿®æ”¹ç‰ˆã€‚ï¼ˆpy36ç¯å¢ƒä¸‹å®‰è£…æœ‰åŸç‰ˆAdverTorchï¼‰å…·ä½“ä¿®æ”¹å†…å®¹ï¼š./advertorch/attacks/iterative_projected_gradient.pyä¸­MomentumIterativeAttackç±»ä¸‹çš„perturbå‡½æ•°ï¼Œline 305-374
 
 ./detector.py:
-S3FDµÄ²âÊÔ³ÌĞò£¬ÃüÁîÎª£ºpython3 detector.py --image ./images/test.jpg --model ./epoch_204.pth.tar --save_to ./images/result.jpg
-²ÎÊı--imageÎª²âÊÔÍ¼Æ¬Â·¾¶£¬--modelÎªÔ¤ÑµÁ·Ä£ĞÍÂ·¾¶£¬--save_toÎª±£´æ½á¹ûÍ¼Æ¬Â·¾¶¡£
+S3FDçš„æµ‹è¯•ç¨‹åºï¼Œå‘½ä»¤ä¸ºï¼špython3 detector.py --image ./images/test.jpg --model ./epoch_204.pth.tar --save_to ./images/result.jpg
+å‚æ•°--imageä¸ºæµ‹è¯•å›¾ç‰‡è·¯å¾„ï¼Œ--modelä¸ºé¢„è®­ç»ƒæ¨¡å‹è·¯å¾„ï¼Œ--save_toä¸ºä¿å­˜ç»“æœå›¾ç‰‡è·¯å¾„ã€‚
 
 ./detector_attack.py:
-¶Ôdetector.pyĞŞ¸ÄºóµÄ¹¥»÷³ÌĞò¡£Ö÷ÒªĞŞ¸Ä²¿·ÖÓĞ¶ş£º
+å¯¹detector.pyä¿®æ”¹åçš„æ”»å‡»ç¨‹åºã€‚ä¸»è¦ä¿®æ”¹éƒ¨åˆ†æœ‰äºŒï¼š
 
-	1¡¢DetectorÀàÏÂµÄconvert_predictionsº¯Êı£ºĞŞ¸ÄÁËÊä³ö£¬Ê¹Ê¶±ğ½á¹ûµÄbounding_boxÓëscores¡¢kclass·ÖÀë£¬±ãÓÚÊäÈë¹¥»÷Ä£ĞÍ¡£line 40-88
+	1ã€Detectorç±»ä¸‹çš„convert_predictionså‡½æ•°ï¼šä¿®æ”¹äº†è¾“å‡ºï¼Œä½¿è¯†åˆ«ç»“æœçš„bounding_boxä¸scoresã€kclassåˆ†ç¦»ï¼Œä¾¿äºè¾“å…¥æ”»å‡»æ¨¡å‹ã€‚line 40-88
 
-	2¡¢¶¨ÒåÁË¹¥»÷Ê¹ÓÃµÄËğÊ§º¯Êıloss_attackÀà£º
-		forwardº¯Êı£º
-		ÊäÈë£ºDetector(args.model).model¶ÔÍ¼ÏñµÄ´¦Àí½á¹ûºÍground_truthµÄbounding_box¡£
-		Êä³ö£º¡¶Hiding Faces¡·ÂÛÎÄÖĞµÄËğÊ§º¯ÊıµÄ¼ÆËãÖµ¡£
-		ÃèÊö£ºforwardº¯ÊıÖĞÇ°°ë²¿·ÖÊÇ¶ÔmodelÊä³öµÄ´¦Àí£¬»ñÈ¡ĞèÒªµÄoutputs£¨¼´ËùÓĞproposal bounding_box£©bounding_boxÓëscores£¨line 180-250£©¡£ºó°ë²¿·ÖÊÇ¼ÆËãlossÖµ£¨line 252-290£©¡£
-		²ÎÊı£ºÂÛÎÄÖĞÉè¶¨ÁË¼ÆËãlossÊ±µÄÈı¸ö²ÎÊı£º
-			theta_d£ºÅĞ¶ÏÃ¿¸öproposalÊÇ·ñÎªÈËÁ³µÄscoreãĞÖµ
-			threshold_p£ºÊÇ·ñÎªÕıÀıµÄãĞÖµ£¨¼´ÅĞ¶ÏÎªÕıÀıµÄIoUãĞÖµ£©
-			threshold_rou£º¸ºÀıµÄÑ¡È¡ãĞÖµ£¨¼´ÅÅ³ıµôscore¹ıµÍµÄ¸ºÀı£¬¼õÉÙ¼ÆËãÁ¿£©
+	2ã€å®šä¹‰äº†æ”»å‡»ä½¿ç”¨çš„æŸå¤±å‡½æ•°loss_attackç±»ï¼š
+		forwardå‡½æ•°ï¼š
+		è¾“å…¥ï¼šDetector(args.model).modelå¯¹å›¾åƒçš„å¤„ç†ç»“æœå’Œground_truthçš„bounding_boxã€‚
+		è¾“å‡ºï¼šã€ŠHiding Facesã€‹è®ºæ–‡ä¸­çš„æŸå¤±å‡½æ•°çš„è®¡ç®—å€¼ã€‚
+		æè¿°ï¼šforwardå‡½æ•°ä¸­å‰åŠéƒ¨åˆ†æ˜¯å¯¹modelè¾“å‡ºçš„å¤„ç†ï¼Œè·å–éœ€è¦çš„outputsï¼ˆå³æ‰€æœ‰proposal bounding_boxï¼‰bounding_boxä¸scoresï¼ˆline 180-250ï¼‰ã€‚ååŠéƒ¨åˆ†æ˜¯è®¡ç®—losså€¼ï¼ˆline 252-290ï¼‰ã€‚
+		å‚æ•°ï¼šè®ºæ–‡ä¸­è®¾å®šäº†è®¡ç®—lossæ—¶çš„ä¸‰ä¸ªå‚æ•°ï¼š
+			theta_dï¼šåˆ¤æ–­æ¯ä¸ªproposalæ˜¯å¦ä¸ºäººè„¸çš„scoreé˜ˆå€¼
+			threshold_pï¼šæ˜¯å¦ä¸ºæ­£ä¾‹çš„é˜ˆå€¼ï¼ˆå³åˆ¤æ–­ä¸ºæ­£ä¾‹çš„IoUé˜ˆå€¼ï¼‰
+			threshold_rouï¼šè´Ÿä¾‹çš„é€‰å–é˜ˆå€¼ï¼ˆå³æ’é™¤æ‰scoreè¿‡ä½çš„è´Ÿä¾‹ï¼Œå‡å°‘è®¡ç®—é‡ï¼‰
 
 
-´æÔÚÎÊÌâ£ºÒÑ¿É½øĞĞÈÅ¶¯£¬Ê¹lossÉÏÉı£¬µ«ÉÏÉıÊ®·ÖÓĞÏŞ£¬²»×ãÒÔÃÔ»ó¼ì²âÆ÷¡£
 
-¿ÉÄÜµÄ½â¾ö·½°¸£ºÔö´ó¹¥»÷Ä£ĞÍµÄ²ÎÊıepsºÍeps_iter£¨µ«ÓĞ¿ÉÄÜÍ¼Æ¬Ê§Õæ£©£¬»ò¸Ä±äËğÊ§º¯ÊıÖĞµÄ²ÎÊı£¨Èçµ÷¸ßthreshold_p£©¡£
+å·²å®Œæˆï¼šæŸå¤±å‡½æ•°å·²å†™å®Œï¼ŒåŸæœ¬æ— æ¢¯åº¦çš„é—®é¢˜å·²è§£å†³ï¼Œå·²å¯äº§ç”Ÿæ­£å¸¸æ‰°åŠ¨ã€‚
+
+
+
+å­˜åœ¨é—®é¢˜ï¼šlossä¸Šå‡ååˆ†æœ‰é™ï¼Œä¸è¶³ä»¥è¿·æƒ‘æ£€æµ‹å™¨ã€‚
+
+
+
+å¯èƒ½çš„è§£å†³æ–¹æ¡ˆï¼šå¢å¤§æ”»å‡»æ¨¡å‹çš„å‚æ•°epså’Œeps_iterï¼ˆä½†æœ‰å¯èƒ½å›¾ç‰‡å¤±çœŸï¼‰ï¼Œæˆ–æ”¹å˜æŸå¤±å‡½æ•°ä¸­çš„å‚æ•°ï¼ˆå¦‚è°ƒé«˜threshold_pï¼‰ã€‚
